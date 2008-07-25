@@ -80,7 +80,7 @@ snip(Line *p)
 
 /* build a Document from any old input.
  */
-typedef unsigned int (*getc_func)(void*);
+typedef int (*getc_func)(void*);
 
 Document *
 populate(getc_func getc, void* ctx, int flags)
