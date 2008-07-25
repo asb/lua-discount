@@ -156,7 +156,7 @@ struct string_ctx {
 } ;
 
 
-static char
+static int
 strget(struct string_ctx *in)
 {
     if ( !in->size ) return EOF;
