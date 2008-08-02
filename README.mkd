@@ -1,0 +1,68 @@
+# lua-discount
+
+A binding to [Discount](http://www.pell.portland.or.us/~orc/Code/discount/), a 
+fast C implementation of the 
+[Markdown](http://daringfireball.net/projects/markdown) markup language.  
+Discount passes the Markdown test suite.
+
+## Project links
+* [Home](http://asbradbury.org/projects/lua-discount/)
+* [Download](http://luaforge.net/projects/lua-discount/)
+* [Documentation](http://asbradbury.org/projects/lua-discount/#usage)
+* [Source](http://github.com/asb/lua-discount/)
+
+## Release history
+* lua-discount-1.2.7 (wip)
+  * first public release
+
+## See also
+* [Discount](http://www.pell.portland.or.us/~orc/Code/discount/)
+* [Markdown syntax](http://daringfireball.net/projects/markdown/syntax)
+* [markdown.lua](http://www.frykholm.se/files/markdown.lua)
+
+## [Usage](id:usage)
+Note that `require("discount")` returns a single function, which you are 
+responsible for giving a suitable name. Example:
+
+    discount = require("discount")
+
+    local markdown_string = [[
+      # Demonstration
+      This is a demonstration of lua-discount. Passing the options `"nolinks"` 
+      disables links such as [this](http://example.com).
+      ]]
+      
+      local html_string = discount(markdown_string, "nolinks")
+
+The `discount` function takes as its first argument the Markdown string to 
+convert, and for its subsequent arguments takes any combination of the 
+following strings as options:
+
+=`"nolinks"`=
+    do not allow `<a` or expand Markdown links.
+=`"noimages"`=
+    do not allow `<img` or expand Markdown images.
+=`"nopants"`=
+    disable [SmartyPants](http://daringfireball.net/projects/smartypants/) 
+    processing.
+=`"tagtext"`=
+    don't expand `*` or `_` when used for emphasis.
+=`"noext"`=
+    do not process 
+    [pseudo-protocols](http://www.pell.portland.or.us/~orc/Code/discount/#pseudo)
+=`"cdata"`=
+    generate output suitable for use as data in an XML document.
+= `"embed"`=
+    equivalent to specifying `"nolinks"`, `"noimages"` and `"tagtext"`.
+
+## License and acknowledgements
+lua-tinycdb is distributed under [a BSD-style 
+license](http://github.com/asb/lua-discount/tree/master/LICENSE).
+
+This product includes software developed by [David Loren 
+Parsons](http://www.pell.portland.or.us/~orc).
+
+## Contact
+Author: A.S. Bradbury  
+Email: <asb@asbradbury.org>  
+Homepage: <http://asbradbury.org/>
