@@ -1,4 +1,5 @@
-VERSION= 0.1
+LIB_NAME= lua-discount
+VERSION= 1.2.7
 
 # change these to reflect your Lua installation
 LUA= /usr
@@ -27,7 +28,10 @@ all: $(SOS)
 $(SOS): $(OBJS)
 	$(CC) -o $@ -shared $(OBJS) $(LIBS)
 
-.PHONY: clean test distr
+.PHONY: clean tar
 clean:
 	rm -f $(OBJS) $(SOS) core core.* a.out
+
+tar: clean
+	git archive --format=tar --prefix=$(LIB_NAME)-$(VERSION)/ $(VERSION) | gzip > $(LIB_NAME)-$(VERSION).tar.gz
 
