@@ -56,7 +56,7 @@ following strings as options:
     equivalent to specifying `"nolinks"`, `"noimages"` and `"tagtext"`.
 
 ## License and acknowledgements
-lua-tinycdb is distributed under [a BSD-style 
+lua-discount is distributed under [a BSD-style 
 license](http://github.com/asb/lua-discount/tree/master/LICENSE).
 
 This product includes software developed by [David Loren 
