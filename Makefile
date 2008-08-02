@@ -8,9 +8,10 @@ LUABIN= $(LUA)/bin
 
 # probably no need to change anything below here
 CC= gcc
-CFLAGS= $(INCS) $(WARN) -O2 -fPIC
+CFLAGS= $(INCS) $(WARN) -O2 -fPIC ${DEFS}
 WARN= -Wall
 INCS= -I$(LUAINC)
+DEFS = -DHAVE_FOPENCOOKIE
 
 DISCOUNT_OBJS = docheader.o \
 	dumptree.o \
