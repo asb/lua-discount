@@ -8,6 +8,7 @@ description = {
    homepage = "http://asbradbury.org/projects/lua-discount/",
    license = "MIT/X11"
 }
+supported_platforms = {"unix"}
 dependencies = {
    "lua >= 5.1"
 }
@@ -22,6 +23,15 @@ build = {
          "mkdio.c",
          "resource.c",
          "ldiscount.c"
+      }
+   },
+   platforms = {
+      linux = {
+         modules = {
+            discount = {
+               defines = {"HAVE_FOPENCOOKIE"}
+            }
+         }
       }
    }
 }
