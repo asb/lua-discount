@@ -4,7 +4,7 @@ source = {
    url = ""
 }
 description = {
-   summary = "Markdown text-to-html markup system",
+   summary = "Binding to a fast C implementation of the Markdown text-to-html markup system",
    homepage = "http://asbradbury.org/projects/lua-discount/",
    license = "MIT/X11"
 }

@@ -2,8 +2,8 @@
 
 A binding to [Discount](http://www.pell.portland.or.us/~orc/Code/discount/), a 
 fast C implementation of the 
-[Markdown](http://daringfireball.net/projects/markdown) markup language.  
-Discount passes the Markdown test suite.
+[Markdown](http://daringfireball.net/projects/markdown) text to HTML markup 
+system. Discount passes the Markdown test suite.
 
 ## Project links
 * [Home](http://asbradbury.org/projects/lua-discount/)
