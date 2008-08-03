@@ -12,7 +12,7 @@ system. Discount passes the Markdown test suite.
 * [Source](http://github.com/asb/lua-discount/)
 
 ## Release history
-* lua-discount-1.2.7 (wip)
+* lua-discount-1.2.7 (2008-08-03)
   * first public release
 
 ## See also
