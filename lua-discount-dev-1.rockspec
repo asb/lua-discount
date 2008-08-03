@@ -6,7 +6,7 @@ source = {
 description = {
    summary = "Binding to a fast C implementation of the Markdown text-to-html markup system",
    homepage = "http://asbradbury.org/projects/lua-discount/",
-   license = "MIT/X11"
+   license = "BSD"
 }
 supported_platforms = {"unix"}
 dependencies = {
