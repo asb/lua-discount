@@ -26,6 +26,17 @@ system. Discount passes the Markdown test suite.
 * [Markdown syntax](http://daringfireball.net/projects/markdown/syntax)
 * [markdown.lua](http://www.frykholm.se/files/markdown.lua)
 
+## Performance
+Thanks to the underlying Discount implementation, lua-discount is incredibly 
+fast. Benchmarking markdown.lua 0.32 against lua-discount 1.2.10 by parsing 
+the [Markdown syntax 
+document](http://daringfireball.net/projects/markdown/syntax.text) 100 times 
+gives the following result (all figures are in seconds):
+
+                       user     system      total       real
+    lua-discount   0.170000   0.000000   0.170000   0.177374
+    markdown.lua  48.530000   0.000000  48.530000  48.524910
+
 ## [Usage](id:usage)
 Note that `require("discount")` returns a single function, which you are 
 responsible for giving a suitable name. Example:

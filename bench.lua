@@ -1,5 +1,8 @@
+require("Benchmark")
+
 require('markdown')
 discount = require('discount')
+
 
 local function read_file(fn)
   local file = assert(io.open(fn))
@@ -8,25 +11,22 @@ local function read_file(fn)
   return contents
 end
 
-text = {}
+local bench = Benchmark:new()
 
-for fn in io.popen('find Tests -type f -name "*.text"'):lines() do
-  text[fn] = read_file(fn)
-end
+local REPS = 100
+local input = read_file("syntax.text")
+print("Benchmarking using http://daringfireball.net/projects/markdown/syntax.text\n")
 
-function test_implementation(mkd, name, rep)
-  rep = rep or 100
-  print("Testing "..name)
-  local start_time = os.clock()
-  for i=1, rep do
-    for fn, contents in pairs(text) do
-      print(mkd(contents))
-    end
+bench:add("lua-discount", function()
+  for i=1, REPS do
+    discount(input)
   end
-  local end_time = os.clock()
-  print("Time: "..(end_time-start_time))
-end
+end)
 
-test_implementation(discount, "lua-discount")
-print('')
-test_implementation(markdown, "Markdown.lua")
+bench:add("markdown.lua", function()
+  for i=1, REPS do
+    markdown(input)
+  end
+end)
+
+bench:run()
