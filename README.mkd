@@ -12,6 +12,10 @@ system. Discount passes the Markdown test suite.
 * [Source](http://github.com/asb/lua-discount/)
 
 ## Release history
+* lua-discount-1.2.10 (unreleased)
+  * update to upstream Discount 1.2.10
+  * support the `"nohtml"` option, to disable embedded html.
+  * add some tests
 * lua-discount-1.2.7 (2008-08-03)
   * first public release
 
@@ -45,6 +49,8 @@ following strings as options:
 =`"nopants"`=
     disable [SmartyPants](http://daringfireball.net/projects/smartypants/) 
     processing.
+=`"nohtml"`=
+    disallow embedded html by replacing all `<` with `&lt;`.
 =`"tagtext"`=
     don't expand `*` or `_` when used for emphasis.
 =`"noext"`=
