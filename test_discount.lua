@@ -9,6 +9,7 @@ end
 
 function test_relaxed_emphasis()
   assert_equal("<p><em>Hello World</em>!</p>\n", discount("_Hello World_!"))
+  assert_equal("<p>under_score this_stuff</p>\n", discount("under_score this_stuff"))
 
   local input = "_start _ foo_bar bar_baz _ end_ *italic* **bold** <a>_blah_</a>"
   local expected_out = "<p><em>start _ foo_bar bar_baz _ end</em> <em>italic</em> <strong>bold</strong> <a><em>blah</em></a></p>\n"
