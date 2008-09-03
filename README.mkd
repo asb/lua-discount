@@ -12,12 +12,13 @@ system. Discount passes the Markdown test suite.
 * [Source](http://github.com/asb/lua-discount/)
 
 ## Release history
-* lua-discount-1.2.10 (unreleased)
+* lua-discount-1.2.10 (2008-09-03)
   * update to upstream Discount 1.2.10
   * support the `"nohtml"` option, to disable embedded html.
   * compile to use relaxed emphasis, meaning underscores don't count when 
     they're in the middle of a word.
   * add some tests
+  * include results of a simple benchmark in the readme
 * lua-discount-1.2.7 (2008-08-03)
   * first public release
 
