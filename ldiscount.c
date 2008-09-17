@@ -115,7 +115,7 @@ static int ldiscount(lua_State *L) {
   return 1;
 }
 
-int luaopen_discount(lua_State *L) {
+LUALIB_API int luaopen_discount(lua_State *L) {
   lua_pushcfunction(L, ldiscount);
   return 1;
 }
