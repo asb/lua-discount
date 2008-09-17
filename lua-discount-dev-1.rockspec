@@ -23,5 +23,14 @@ build = {
          "resource.c",
          "ldiscount.c"
       }
+   },
+   platforms = {
+      windows = {
+         modules = {
+            discount = {
+               defines = {"WINDOWS"}
+            }
+         }
+      }
    }
 }
