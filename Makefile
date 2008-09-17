@@ -12,7 +12,7 @@ CC= gcc
 CFLAGS= $(INCS) $(WARN) -O2 -fPIC ${DEFS}
 WARN= -Wall
 INCS= -I$(LUAINC)
-DEFS = -DHAVE_FOPENCOOKIE
+DEFS = 
 
 DISCOUNT_OBJS = docheader.o \
 	dumptree.o \

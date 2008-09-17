@@ -24,14 +24,5 @@ build = {
          "resource.c",
          "ldiscount.c"
       }
-   },
-   platforms = {
-      linux = {
-         modules = {
-            discount = {
-               defines = {"HAVE_FOPENCOOKIE"}
-            }
-         }
-      }
    }
 }
