@@ -36,3 +36,7 @@ function test_nohtml()
   local expected = "<p>This should &lt;em>not&lt;/em> be allowed</p>\n"
   assert_equal(expected, discount("This should <em>not</em> be allowed", "nohtml"))
 end
+
+function test_cdata()
+  assert_equal("&lt;p&gt;foo&lt;/p&gt;\n", discount("foo", "cdata"))
+end
