@@ -1,5 +1,5 @@
 LIB_NAME= lua-discount
-VERSION= 1.2.10
+VERSION= 1.2.10.1
 
 # change these to reflect your Lua installation
 LUA= /usr

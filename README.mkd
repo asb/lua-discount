@@ -12,6 +12,9 @@ system. Discount passes the Markdown test suite.
 * [Source](http://github.com/asb/lua-discount/)
 
 ## Release history
+* lua-discount-1.2.10.1 (2008-09-22)
+  * Windows is now a supported platform (thanks to contributions from Tim 
+    Channon)
 * lua-discount-1.2.10 (2008-09-03)
   * update to upstream Discount 1.2.10
   * support the `"nohtml"` option, to disable embedded html.
@@ -78,6 +81,8 @@ following strings as options:
 ## License and acknowledgements
 lua-discount is distributed under [a BSD-style 
 license](http://github.com/asb/lua-discount/tree/master/LICENSE).
+
+Thanks to Tim Channon for Windows support.
 
 This product includes software developed by [David Loren 
 Parsons](http://www.pell.portland.or.us/~orc).
