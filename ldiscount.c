@@ -7,15 +7,15 @@
 #include "markdown.h"
 
 /* copied from mkdio.h */
-/* special flags for markdown() and mkd_text()
- */
 #define MKD_NOLINKS	0x0001	/* don't do link processing, block <a> tags  */
 #define MKD_NOIMAGE	0x0002	/* don't do image processing, block <img> */
 #define MKD_NOPANTS	0x0004	/* don't run smartypants() */
 #define MKD_NOHTML	0x0008	/* don't allow raw html through AT ALL */
+#define MKD_STRICT	0x0010	/* disable SUPERSCRIPT, RELAXED_EMPHASIS */
 #define MKD_TAGTEXT	0x0020	/* don't expand `_` and `*` */
 #define MKD_NO_EXT	0x0040	/* don't allow pseudo-protocols */
 #define MKD_CDATA	0x0080	/* generate code for xml ![CDATA[...]] */
+#define MKD_TOC		0x1000	/* do table-of-contents processing */
 #define MKD_EMBED	MKD_NOLINKS|MKD_NOIMAGE|MKD_TAGTEXT
 
 /* special flags for mkd_in() and mkd_string()
@@ -28,9 +28,11 @@ static const char *const discount_opts[] = {
   "noimages",
   "nopants",
   "nohtml",
+  "strict",
   "tagtext",
   "noext",
   "cdata",
+  "toc",
   "embed",
   NULL
 };
@@ -40,9 +42,11 @@ static const int discount_opts_codes[] = {
   MKD_NOIMAGE,
   MKD_NOPANTS,
   MKD_NOHTML,
+  MKD_STRICT,
   MKD_TAGTEXT,
   MKD_NO_EXT,
   MKD_CDATA,
+  MKD_TOC,
   MKD_EMBED
 };
 
