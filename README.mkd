@@ -12,6 +12,14 @@ system. Discount passes the Markdown test suite.
 * [Source](http://github.com/asb/lua-discount/)
 
 ## Release history
+* lua-discount-1.3.1 (unreleased)
+  * update to updstream Discount 1.3.1
+  * new [language extensions][1]: class blocks, superscripts and alphabetic 
+    ordered lists.
+  * support the `"toc"` option for table of contents generation - headers will 
+    include an `id` attribute.
+  * support the `"strict"` option, to disable relaxed emphasis and 
+    superscripts.
 * lua-discount-1.2.10.1 (2008-09-22)
   * Windows is now a supported platform (thanks to contributions from Tim 
     Channon)
@@ -24,6 +32,8 @@ system. Discount passes the Markdown test suite.
   * include results of a simple benchmark in the readme
 * lua-discount-1.2.7 (2008-08-03)
   * first public release
+
+[1]: http://www.pell.portland.or.us/~orc/Code/discount/#Language+extensions
 
 ## See also
 * [Discount](http://www.pell.portland.or.us/~orc/Code/discount/)
@@ -68,6 +78,8 @@ following strings as options:
     processing.
 =`"nohtml"`=
     disallow embedded html by replacing all `<` with `&lt;`.
+=`"strict"`=
+    disable relaxed emphasis and superscripts.
 =`"tagtext"`=
     don't expand `*` or `_` when used for emphasis.
 =`"noext"`=
@@ -75,7 +87,10 @@ following strings as options:
     [pseudo-protocols](http://www.pell.portland.or.us/~orc/Code/discount/#pseudo)
 =`"cdata"`=
     generate output suitable for use as data in an XML document.
-= `"embed"`=
+=`"toc"`=
+    generate table-of-contents headers - each generated `<h1>`, `<h2>`, etc 
+    will include an `id` attribute.
+=`"embed"`=
     equivalent to specifying `"nolinks"`, `"noimages"` and `"tagtext"`.
 
 ## License and acknowledgements
