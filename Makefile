@@ -19,7 +19,8 @@ DISCOUNT_OBJS = docheader.o \
 	generate.o \
 	markdown.o \
 	mkdio.o \
-	resource.o
+	resource.o \
+	toc.o
 OBJS=  $(DISCOUNT_OBJS) ldiscount.o
 SOS= discount.so
 

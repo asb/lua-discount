@@ -21,6 +21,7 @@ build = {
          "markdown.c",
          "mkdio.c",
          "resource.c",
+         "toc.c",
          "ldiscount.c"
       }
    },
