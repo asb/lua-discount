@@ -113,7 +113,7 @@ populate(getc_func getc, void* ctx, int flags)
 	    queue(a, &line);
 	    S(line) = 0;
 	}
-	else
+	else if ( isprint(c) || isspace(c) || (c & 0x80) )
 	    EXPAND(line) = c;
     }
 
@@ -193,7 +193,7 @@ mkd_generatehtml(Document *p, FILE *output)
 
     if ( (szdoc = mkd_document(p, &doc)) != EOF ) {
 	if ( p->ctx->flags & CDATA_OUTPUT )
-	    ___mkd_xml(doc, szdoc, output);
+	    mkd_generatexml(doc, szdoc, output);
 	else
 	    fwrite(doc, szdoc, 1, output);
 	putc('\n', output);
@@ -217,25 +217,119 @@ markdown(Document *document, FILE *out, int flags)
 }
 
 
-void
-mkd_basename(Document *document, char *base)
-{
-    if ( document )
-	document->base = base;
-}
-
-
 /* write out a Cstring, mangled into a form suitable for `<a href=` or `<a id=`
  */
 void
 mkd_string_to_anchor(char *s, int len, void(*outchar)(int,void*), void *out)
 {
-    for ( ; len-- > 0; ++s ) {
-	if ( *s == ' ' || *s == '&' || *s == '<' || *s == '"' )
+    unsigned char c;
+    
+    for ( ; len-- > 0; ) {
+	c = *s++;
+	if ( c == ' ' || c == '&' || c == '<' || c == '"' )
 	    (*outchar)('+', out);
-	else if ( isalnum(*s) || ispunct(*s) )
-	    (*outchar)(*s, out);
+	else if ( isalnum(c) || ispunct(c) || (c & 0x80) )
+	    (*outchar)(c, out);
 	else
 	    (*outchar)('~',out);
     }
+}
+
+
+/*  ___mkd_reparse() a line
+ */
+static void
+mkd_parse_line(char *bfr, int size, MMIOT *f, int flags)
+{
+    ___mkd_initmmiot(f, 0);
+    f->flags = flags & USER_FLAGS;
+    ___mkd_reparse(bfr, size, 0, f);
+    ___mkd_emblock(f);
+}
+
+
+/* ___mkd_reparse() a line, returning it in malloc()ed memory
+ */
+int
+mkd_line(char *bfr, int size, char **res, int flags)
+{
+    MMIOT f;
+    int len;
+    
+    mkd_parse_line(bfr, size, &f, flags);
+
+    if ( len = S(f.out) ) {
+	/* kludge alert;  we know that T(f.out) is malloced memory,
+	 * so we can just steal it away.   This is awful -- there
+	 * should be an opaque method that transparently moves 
+	 * the pointer out of the embedded Cstring.
+	 */
+	*res = T(f.out);
+	T(f.out) = 0;
+	S(f.out) = 0;
+    }
+    else {
+	 *res = 0;
+	 len = EOF;
+     }
+    ___mkd_freemmiot(&f, 0);
+    return len;
+}
+
+
+/* ___mkd_reparse() a line, writing it to a FILE
+ */
+int
+mkd_generateline(char *bfr, int size, FILE *output, int flags)
+{
+    MMIOT f;
+
+    mkd_parse_line(bfr, size, &f, flags);
+    if ( flags & CDATA_OUTPUT )
+	mkd_generatexml(T(f.out), S(f.out), output);
+    else
+	fwrite(T(f.out), S(f.out), 1, output);
+
+    ___mkd_freemmiot(&f, 0);
+    return 0;
+}
+
+
+/* set the url display callback
+ */
+void
+mkd_e_url(Document *f, mkd_callback_t edit)
+{
+    if ( f )
+	f->cb.e_url = edit;
+}
+
+
+/* set the url options callback
+ */
+void
+mkd_e_flags(Document *f, mkd_callback_t edit)
+{
+    if ( f )
+	f->cb.e_flags = edit;
+}
+
+
+/* set the url display/options deallocator
+ */
+void
+mkd_e_free(Document *f, mkd_free_t dealloc)
+{
+    if ( f )
+	f->cb.e_free = dealloc;
+}
+
+
+/* set the url display/options context data field
+ */
+void
+mkd_e_data(Document *f, void *data)
+{
+    if ( f )
+	f->cb.e_data = data;
 }

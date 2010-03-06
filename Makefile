@@ -3,7 +3,7 @@ VERSION= 1.2.10.1
 
 # change these to reflect your Lua installation
 LUA= /usr
-LUAINC= $(LUA)/include
+LUAINC= $(LUA)/include/lua5.1
 LUALIB= $(LUA)/lib
 LUABIN= $(LUA)/bin
 
@@ -14,13 +14,18 @@ WARN= -Wall
 INCS= -I$(LUAINC)
 DEFS = 
 
-DISCOUNT_OBJS = docheader.o \
+DISCOUNT_OBJS = basename.o \
+  Csio.o \
+	css.o \
+	docheader.o \
 	dumptree.o \
+	emmatch.o \
 	generate.o \
 	markdown.o \
 	mkdio.o \
 	resource.o \
-	toc.o
+	toc.o \
+	xml.o
 OBJS=  $(DISCOUNT_OBJS) ldiscount.o
 SOS= discount.so
 

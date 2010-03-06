@@ -21,10 +21,12 @@
  */
 struct kw {
     char *id;
-    int  siz;
+    int  size;
+    int  selfclose;
 } ;
 
-#define KW(x)	{ x, sizeof(x)-1 }
+#define KW(x)	{ x, sizeof(x)-1, 0 }
+#define SC(x)	{ x, sizeof(x)-1, 1 }
 
 static struct kw blocktags[] = { KW("!--"), KW("STYLE"), KW("SCRIPT"),
 				 KW("ADDRESS"), KW("BDO"), KW("BLOCKQUOTE"),
@@ -33,7 +35,8 @@ static struct kw blocktags[] = { KW("!--"), KW("STYLE"), KW("SCRIPT"),
 				 KW("H6"), KW("LISTING"), KW("NOBR"),
 				 KW("UL"), KW("P"), KW("OL"), KW("DL"),
 				 KW("PLAINTEXT"), KW("PRE"), KW("TABLE"),
-				 KW("WBR"), KW("XMP"), KW("HR"), KW("BR") };
+				 KW("WBR"), KW("XMP"), SC("HR"), SC("BR"),
+				 KW("IFRAME"), KW("MAP") };
 #define SZTAGS	(sizeof blocktags / sizeof blocktags[0])
 #define MAXTAG	11 /* sizeof "BLOCKQUOTE" */
 
@@ -47,9 +50,9 @@ typedef ANCHOR(Paragraph) ParagraphRoot;
 static int
 casort(struct kw *a, struct kw *b)
 {
-    if ( a->siz != b->siz )
-	return a->siz - b->siz;
-    return strncasecmp(a->id, b->id, b->siz);
+    if ( a->size != b->size )
+	return a->size - b->size;
+    return strncasecmp(a->id, b->id, b->size);
 }
 
 
@@ -124,7 +127,15 @@ skipempty(Line *p)
 }
 
 
-static char *
+void
+___mkd_tidy(Cstring *t)
+{
+    while ( S(*t) && isspace(T(*t)[S(*t)-1]) )
+	--S(*t);
+}
+
+
+static struct kw *
 isopentag(Line *p)
 {
     int i=0, len;
@@ -146,57 +157,87 @@ isopentag(Line *p)
 	;
 
     key.id = T(p->text)+1;
-    key.siz = i-1;
+    key.size = i-1;
     
-    if ( ret = bsearch(&key,blocktags,SZTAGS,sizeof key, (stfu)casort))
-	return ret->id;
+    if ( ret = bsearch(&key, blocktags, SZTAGS, sizeof key, (stfu)casort))
+	return ret;
 
     return 0;
 }
 
 
-static int
-selfclose(Line *t, char *tag)
-{
-    char *q = T(t->text);
-    int siz = strlen(tag);
+typedef struct _flo {
+    Line *t;
     int i;
+} FLO;
 
-    if ( strcasecmp(tag, "HR") == 0 || strcasecmp(tag, "BR") == 0 )
-	/* <HR> and <BR> are self-closing block-level tags,
-	 */
-	return 1;
 
-    i = S(t->text) - (siz + 3);
-
-    /* we specialcase start and end tags on the same line.
-     */
-    return ( i > 0 ) && (q[i] == '<') && (q[i+1] == '/')
-		     && (q[i+2+siz] == '>')
-		     && (strncasecmp(&q[i+2], tag, siz) == 0);
+static int
+flogetc(FLO *f)
+{
+    if ( f && f->t ) {
+	if ( f->i < S(f->t->text) )
+	    return T(f->t->text)[f->i++];
+	f->t = f->t->next;
+	f->i = 0;
+	return flogetc(f);
+    }
+    return EOF;
 }
 
 
 static Line *
-htmlblock(Paragraph *p, char *tag)
+htmlblock(Paragraph *p, struct kw *tag)
 {
-    Line *t = p->text, *ret;
-    int closesize;
-    char close[MAXTAG+4];
+    Line *ret;
+    FLO f = { p->text, 0 };
+    int c;
+    int i, closing, depth=0;
 
-    if ( selfclose(t, tag) || (strlen(tag) >= MAXTAG) ) {
-	ret = t->next;
-	t->next = 0;
+    if ( tag->selfclose || (tag->size >= MAXTAG) ) {
+	ret = f.t->next;
+	f.t->next = 0;
 	return ret;
     }
 
-    closesize = sprintf(close, "</%s>", tag);
+    while ( (c = flogetc(&f)) != EOF ) {
+	if ( c == '<' ) {
+	    /* tag? */
+	    c = flogetc(&f);
+	    if ( c == '!' ) { /* comment? */
+		if ( flogetc(&f) == '-' && flogetc(&f) == '-' ) {
+		    /* yes */
+		    while ( (c = flogetc(&f)) != EOF ) {
+			if ( c == '-' && flogetc(&f) == '-'
+				      && flogetc(&f) == '>')
+			      /* consumed whole comment */
+			      break;
+		    }
+		}
+	    }
+	    else { 
+		if ( closing = (c == '/') ) c = flogetc(&f);
 
-    for ( ; t ; t = t->next) {
-	if ( strncasecmp(T(t->text), close, closesize) == 0 ) {
-	    ret = t->next;
-	    t->next = 0;
-	    return ret;
+		for ( i=0; i < tag->size; c=flogetc(&f) ) {
+		    if ( tag->id[i++] != toupper(c) )
+			break;
+		}
+
+		if ( (i == tag->size) && !isalnum(c) ) {
+		    depth = depth + (closing ? -1 : 1);
+		    if ( depth == 0 ) {
+			while ( c != EOF && c != '>' ) {
+			    /* consume trailing gunk in close tag */
+			    c = flogetc(&f);
+			}
+			if ( !f.t )
+			    return 0;
+			ret = f.t->next;
+			f.t->next = 0;
+			return ret;
+		    }
+		}
+	    }
 	}
     }
     return 0;
@@ -204,7 +245,7 @@ htmlblock(Paragraph *p, char *tag)
 
 
 static Line *
-comment(Paragraph *p, char *key)
+comment(Paragraph *p)
 {
     Line *t, *ret;
 
@@ -217,6 +258,37 @@ comment(Paragraph *p, char *key)
     }
     return t;
 
+}
+
+
+/* tables look like
+ *   header|header{|header}
+ *   ------|------{|......}
+ *   {body lines}
+ */
+static int
+istable(Line *t)
+{
+    char *p;
+    Line *dashes = t->next;
+    int contains = 0;	/* found character bits; 0x01 is |, 0x02 is - */
+    
+    /* two lines, first must contain | */
+    if ( !(dashes && memchr(T(t->text), '|', S(t->text))) )
+	return 0;
+
+    /* second line must contain - or | and nothing
+     * else except for whitespace or :
+     */
+    for ( p = T(dashes->text)+S(dashes->text)-1; p >= T(dashes->text); --p)
+	if ( *p == '|' )
+	    contains |= 0x01;
+	else if ( *p == '-' )
+	    contains |= 0x02;
+	else if ( ! ((*p == ':') || isspace(*p)) )
+	    return 0;
+
+    return (contains & 0x03);
 }
 
 
@@ -233,8 +305,8 @@ isfootnote(Line *t)
     for ( ++i; i < S(t->text) ; ++i ) {
 	if ( T(t->text)[i] == '[' )
 	    return 0;
-	else if ( T(t->text)[i] == ']' && T(t->text)[i+1] == ':' )
-	    return 1;
+	else if ( T(t->text)[i] == ']' )
+	    return ( T(t->text)[i+1] == ':' ) ;
     }
     return 0;
 }
@@ -243,7 +315,14 @@ isfootnote(Line *t)
 static int
 isquote(Line *t)
 {
-    return ( T(t->text)[0] == '>' );
+    int j;
+
+    for ( j=0; j < 4; j++ )
+	if ( T(t->text)[j] == '>' )
+	    return 1;
+	else if ( !isspace(T(t->text)[j]) )
+	    return 0;
+    return 0;
 }
 
 
@@ -299,7 +378,7 @@ ishdr(Line *t, int *htyp)
 
     /* ANY leading `#`'s make this into an ETX header
      */
-    if ( i ) {
+    if ( i && (i < S(t->text) || i > 1) ) {
 	*htyp = ETX;
 	return 1;
     }
@@ -310,9 +389,14 @@ ishdr(Line *t, int *htyp)
 
     if ( t->next ) {
 	char *q = T(t->next->text);
+	int last = S(t->next->text);
 
 	if ( (*q == '=') || (*q == '-') ) {
-	    for (i=1; i < S(t->next->text); i++)
+	    /* ignore trailing whitespace */
+	    while ( (last > 1) && isspace(q[last-1]) )
+		--last;
+
+	    for (i=1; i < last; i++)
 		if ( q[0] != q[i] )
 		    return 0;
 	    *htyp = SETEXT;
@@ -403,7 +487,8 @@ headerblock(Paragraph *pp, int htyp)
 	     * the leading and trailing `#`'s
 	     */
 
-	    for (i=0; (T(p->text)[i] == T(p->text)[0]) && (i < S(p->text)-1); i++)
+	    for (i=0; (T(p->text)[i] == T(p->text)[0]) && (i < S(p->text)-1)
+						       && (i < 6); i++)
 		;
 
 	    pp->hnumber = i;
@@ -433,12 +518,6 @@ static Line *
 codeblock(Paragraph *p)
 {
     Line *t = p->text, *r;
-
-    /* HORRIBLE STANDARDS KLUDGE: the first line of every block
-     * has trailing whitespace trimmed off.
-     */
-    while ( S(t->text) && isspace(T(t->text)[S(t->text)-1]) )
-	--S(t->text);
 
     for ( ; t; t = r ) {
 	CLIP(t->text,0,4);
@@ -492,12 +571,13 @@ textblock(Paragraph *p, int toplevel)
 {
     Line *t, *next;
 
-    for ( t = p->text; t ; t = next )
+    for ( t = p->text; t ; t = next ) {
 	if ( ((next = t->next) == 0) || endoftextblock(next, toplevel) ) {
 	    p->align = centered(p->text, t);
 	    t->next = 0;
 	    return next;
 	}
+    }
     return t;
 }
 
@@ -520,17 +600,17 @@ szmarkerclass(char *p)
  * marker %[kind:]name%
  */
 static int
-isdivmarker(Line *p)
+isdivmarker(Line *p, int start)
 {
 #if DIV_QUOTE
     char *s = T(p->text);
     int len = S(p->text);
     int i;
 
-    if ( !(len && s[0] == '%' && s[len-1] == '%') ) return 0;
+    if ( !(len && s[start] == '%' && s[len-1] == '%') ) return 0;
 
-    i = szmarkerclass(s+1);
-    --len;
+    i = szmarkerclass(s+start+1)+start;
+    len -= start+1;
 
     while ( ++i < len )
 	if ( !isalnum(s[i]) )
@@ -562,18 +642,29 @@ quoteblock(Paragraph *p)
 
     for ( t = p->text; t ; t = q ) {
 	if ( isquote(t) ) {
-	    qp = (T(t->text)[1] == ' ') ? 2 : 1;
+	    /* clip leading spaces */
+	    for (qp = 0; T(t->text)[qp] != '>'; qp ++)
+		/* assert: the first nonblank character on this line
+		 * will be a >
+		 */;
+	    /* clip '>' */
+	    qp++;
+	    /* clip next space, if any */
+	    if ( T(t->text)[qp] == ' ' )
+		qp++;
 	    CLIP(t->text, 0, qp);
 	    t->dle = mkd_firstnonblank(t);
 	}
 
-	if ( !(q = skipempty(t->next)) || ((q != t->next) && !isquote(q)) ) {
+	q = skipempty(t->next);
+
+	if ( (q == 0) || ((q != t->next) && (!isquote(q) || isdivmarker(q,1))) ) {
 	    ___mkd_freeLineRange(t, q);
 	    t = q;
 	    break;
 	}
     }
-    if ( isdivmarker(p->text) ) {
+    if ( isdivmarker(p->text,0) ) {
 	char *prefix = "class";
 	int i;
 	
@@ -584,13 +675,32 @@ quoteblock(Paragraph *p)
 	    /* and this would be an "%id:" prefix */
 	    prefix="id";
 	    
-	if ( p->ident = malloc(4+i+S(q->text)) )
+	if ( p->ident = malloc(4+strlen(prefix)+S(q->text)) )
 	    sprintf(p->ident, "%s=\"%.*s\"", prefix, S(q->text)-(i+2),
 						     T(q->text)+(i+1) );
 
 	___mkd_freeLine(q);
     }
     return t;
+}
+
+
+/*
+ * A table block starts with a table header (see istable()), and continues
+ * until EOF or a line that /doesn't/ contain a |.
+ */
+static Line *
+tableblock(Paragraph *p)
+{
+    Line *t, *q;
+
+    for ( t = p->text; t && (q = t->next); t = t->next ) {
+	if ( !memchr(T(q->text), '|', S(q->text)) ) {
+	    t->next = 0;
+	    return q;
+	}
+    }
+    return 0;
 }
 
 
@@ -621,16 +731,18 @@ listitem(Paragraph *p, int indent)
 	}
 
 	/* after a blank line, the next block needs to start with a line
-	 * that's indented 4 spaces, but after that the line doesn't
-	 * need any indentation
+	 * that's indented 4(? -- reference implementation allows a 1
+	 * character indent, but that has unfortunate side effects here)
+	 * spaces, but after that the line doesn't need any indentation
 	 */
 	if ( q != t->next ) {
-	    if (q->dle < 4) {
+	    if (q->dle < indent) {
 		q = t->next;
 		t->next = 0;
 		return q;
 	    }
-	    indent = 4;
+	    /* indent as far as the initial line was indented. */
+	    indent = clip;
 	}
 
 	if ( (q->dle < indent) && (ishr(q) || islist(q,&z)) && !ishdr(q,&z) ) {
@@ -650,9 +762,10 @@ listblock(Paragraph *top, int trim, MMIOT *f)
 {
     ParagraphRoot d = { 0, 0 };
     Paragraph *p;
-    Line *q = top->text, *text;
-    Line *label;
-    int para = 0;
+    Line *q = top->text, *text, *label;
+    int isdl = (top->typ == DL),
+	para = 0,
+	ltype;
 
     while (( text = q )) {
 	if ( top->typ == DL ) {
@@ -676,7 +789,8 @@ listblock(Paragraph *top, int trim, MMIOT *f)
 
 	if ( para && (top->typ != DL) && p->down ) p->down->align = PARA;
 
-	if ( !(q = skipempty(text)) || (islist(q, &trim) == 0) )
+	if ( !(q = skipempty(text)) || ((ltype = islist(q, &trim)) == 0)
+				    || (isdl != (ltype == DL)) )
 	    break;
 
 	if ( para = (q != text) ) {
@@ -807,6 +921,64 @@ consume(Line *ptr, int *eaten)
 
 
 /*
+ * top-level compilation; break the document into
+ * style, html, and source blocks with footnote links
+ * weeded out.
+ */
+static Paragraph *
+compile_document(Line *ptr, MMIOT *f)
+{
+    ParagraphRoot d = { 0, 0 };
+    ANCHOR(Line) source = { 0, 0 };
+    Paragraph *p = 0;
+    struct kw *tag;
+    int eaten;
+
+    while ( ptr ) {
+	if ( !(f->flags & DENY_HTML) && (tag = isopentag(ptr)) ) {
+	    /* If we encounter a html/style block, compile and save all
+	     * of the cached source BEFORE processing the html/style.
+	     */
+	    if ( T(source) ) {
+		E(source)->next = 0;
+		p = Pp(&d, 0, SOURCE);
+		p->down = compile(T(source), 1, f);
+		T(source) = E(source) = 0;
+	    }
+	    p = Pp(&d, ptr, strcmp(tag->id, "STYLE") == 0 ? STYLE : HTML);
+	    if ( strcmp(tag->id, "!--") == 0 )
+		ptr = comment(p);
+	    else
+		ptr = htmlblock(p, tag);
+	}
+	else if ( isfootnote(ptr) ) {
+	    /* footnotes, like cats, sleep anywhere; pull them
+	     * out of the input stream and file them away for
+	     * later processing
+	     */
+	    ptr = consume(addfootnote(ptr, f), &eaten);
+	}
+	else {
+	    /* source; cache it up to wait for eof or the
+	     * next html/style block
+	     */
+	    ATTACH(source,ptr);
+	    ptr = ptr->next;
+	}
+    }
+    if ( T(source) ) {
+	/* if there's any cached source at EOF, compile
+	 * it now.
+	 */
+	E(source)->next = 0;
+	p = Pp(&d, 0, SOURCE);
+	p->down = compile(T(source), 1, f);
+    }
+    return T(d);
+}
+
+
+/*
  * break a collection of markdown input into
  * blocks of lists, code, html, and text to
  * be marked up.
@@ -816,23 +988,24 @@ compile(Line *ptr, int toplevel, MMIOT *f)
 {
     ParagraphRoot d = { 0, 0 };
     Paragraph *p = 0;
-    char *key;
     Line *r;
     int para = toplevel;
+    int blocks = 0;
     int hdr_type, list_type, indent;
 
     ptr = consume(ptr, &para);
 
     while ( ptr ) {
-	if ( toplevel && !(f->flags & DENY_HTML) && (key = isopentag(ptr)) ) {
-	    p = Pp(&d, ptr, strcmp(key, "STYLE") == 0 ? STYLE : HTML);
-	    if ( strcmp(key, "!--") == 0 )
-		ptr = comment(p, key);
-	    else
-		ptr = htmlblock(p, key);
-	}
-	else if ( iscode(ptr) ) {
+	if ( iscode(ptr) ) {
 	    p = Pp(&d, ptr, CODE);
+	    
+	    if ( f->flags & MKD_1_COMPAT) {
+		/* HORRIBLE STANDARDS KLUDGE: the first line of every block
+		 * has trailing whitespace trimmed off.
+		 */
+		___mkd_tidy(&p->text->text);
+	    }
+	    
 	    ptr = codeblock(p);
 	}
 	else if ( ishr(ptr) ) {
@@ -855,9 +1028,9 @@ compile(Line *ptr, int toplevel, MMIOT *f)
 	    p = Pp(&d, ptr, HDR);
 	    ptr = headerblock(p, hdr_type);
 	}
-	else if ( toplevel && (isfootnote(ptr)) ) {
-	    ptr = consume(addfootnote(ptr, f), &para);
-	    continue;
+	else if ( istable(ptr) && !(f->flags & (STRICT|NOTABLES)) ) {
+	    p = Pp(&d, ptr, TABLE);
+	    ptr = tableblock(p);
 	}
 	else {
 	    p = Pp(&d, ptr, MARKUP);
@@ -867,7 +1040,8 @@ compile(Line *ptr, int toplevel, MMIOT *f)
 	if ( (para||toplevel) && !p->align )
 	    p->align = PARA;
 
-	para = toplevel;
+	blocks++;
+	para = toplevel || (blocks > 1);
 	ptr = consume(ptr, &para);
 
 	if ( para && !p->align )
@@ -910,15 +1084,15 @@ mkd_compile(Document *doc, int flags)
 
     doc->compiled = 1;
     memset(doc->ctx, 0, sizeof(MMIOT) );
-    doc->ctx->flags = flags & USER_FLAGS;
-    doc->ctx->base = doc->base;
+    doc->ctx->cb        = &(doc->cb);
+    doc->ctx->flags     = flags & USER_FLAGS;
     CREATE(doc->ctx->in);
     doc->ctx->footnotes = malloc(sizeof doc->ctx->footnotes[0]);
     CREATE(*doc->ctx->footnotes);
 
     initialize();
 
-    doc->code = compile(T(doc->content), 1, doc->ctx);
+    doc->code = compile_document(T(doc->content), doc->ctx);
     qsort(T(*doc->ctx->footnotes), S(*doc->ctx->footnotes),
 		        sizeof T(*doc->ctx->footnotes)[0],
 			           (stfu)__mkd_footsort);
