@@ -15,7 +15,11 @@ static const char *const discount_opts[] = {
   "tagtext",
   "noext",
   "cdata",
+  "notables",
   "toc",
+  "compat",
+  "autolink",
+  "safelink",
   "embed",
   NULL
 };
@@ -29,7 +33,11 @@ static const int discount_opts_codes[] = {
   MKD_TAGTEXT,
   MKD_NO_EXT,
   MKD_CDATA,
+  MKD_NOTABLES,
   MKD_TOC,
+  MKD_1_COMPAT,
+  MKD_AUTOLINK,
+  MKD_SAFELINK,
   MKD_EMBED
 };
 
