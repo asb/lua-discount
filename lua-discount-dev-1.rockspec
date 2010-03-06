@@ -15,13 +15,18 @@ build = {
    type = "builtin",
    modules = {
       discount = {
+         "basename.c",
+         "Csio.c",
+         "css.c",
          "docheader.c",
          "dumptree.c",
+         "emmatch.c",
          "generate.c",
          "markdown.c",
          "mkdio.c",
          "resource.c",
          "toc.c",
+         "xml.c",
          "ldiscount.c"
       }
    },
